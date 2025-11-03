@@ -132,12 +132,8 @@ defmodule Kaffe.Config.Consumer do
     config_get(config_key, :heroku_kafka_env, false)
   end
 
-  def config_get!(config_key, :subscriber_name), do: config_key
-
   def config_get!(config_key, key) do
-    consumer_config =
-      Application.get_env(:kaffe, :consumers)
-      |> consumer_config(config_key)
+    consumer_config = consumer_config(config_key)
 
     case consumer_config do
       nil ->
@@ -153,9 +149,7 @@ defmodule Kaffe.Config.Consumer do
   end
 
   def config_get(config_key, key, default) do
-    consumer_config =
-      Application.get_env(:kaffe, :consumers)
-      |> consumer_config(config_key)
+    consumer_config = consumer_config(config_key)
 
     case consumer_config do
       nil -> default
@@ -163,30 +157,20 @@ defmodule Kaffe.Config.Consumer do
     end
   end
 
-  def consumer_config(consumers, config_key) do
+  def consumer_config(config_key) do
+    consumers = Application.get_env(:kaffe, :consumers)
+    default_config = Application.get_env(:kaffe, :consumer, [])
+
     case consumers do
-      map when is_map(map) -> Map.get(map, config_key)
-      list when is_list(list) -> Keyword.get(list, config_key)
-      _ -> nil
-    end
-  end
+      map when is_map(map) ->
+        Map.get(map, config_key)
 
-  def validate_configuration!() do
-    if Application.get_env(:kaffe, :consumers) == nil do
-      old_config = Application.get_env(:kaffe, :consumer) || []
-      subscriber_name = old_config |> Keyword.get(:subscriber_name, "subscriber_name")
+      list when is_list(list) ->
+        default_config
+        |> Keyword.merge(Keyword.get(list, config_key, []))
 
-      raise("""
-      UPDATE CONSUMERS CONFIG:
-
-      Set :kaffe, :consumers to a map with subscriber names as keys and config as values.
-      For example:
-
-      config :kaffe,
-        consumers: %{
-          #{inspect(subscriber_name)} => #{inspect(old_config)}
-        }
-      """)
+      _ ->
+        default_config
     end
   end
 end

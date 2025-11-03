@@ -61,7 +61,7 @@ defmodule Kaffe.Consumer do
   acknowledgement you will be able to process messages faster but will need to
   take on the burden of ensuring no messages are lost.
   """
-  def start_link(config_key) do
+  def start_link(config_key \\ :default) do
     config = Kaffe.Config.Consumer.configuration(config_key)
 
     @kafka.start_link_group_subscriber(
