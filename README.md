@@ -104,9 +104,10 @@ There is also legacy support for single message consumers, which process one mes
 		* `:worker_per_topic_partition` This strategy allocates a worker per topic partition. This means there will be a worker for every topic partition consumed. Unless you need to control concurrency across topics, you should use this strategy.
 
       ```elixir
+      # Recommended keyword list format (better config merging)
       config :kaffe,
-        consumers: %{
-          "subscriber_1" => [
+        consumers: [
+          subscriber_1: [
             endpoints: [kafka: 9092],
             topics: ["interesting-topic"],
             consumer_group: "your-app-consumer-group",
@@ -124,7 +125,7 @@ There is also legacy support for single message consumers, which process one mes
               password: System.get_env("KAFFE_PRODUCER_PASSWORD")
             }
           ],
-          "subscriber_2" => [
+          subscriber_2: [
             endpoints: [kafka: 9092],
             topics: ["topic-2"],
             consumer_group: "your-app-consumer-group",
@@ -133,7 +134,14 @@ There is also legacy support for single message consumers, which process one mes
             max_bytes: 50_000,
             worker_allocation_strategy: :worker_per_topic_partition
           ]
-      }
+        ]
+
+      # Alternative: Map format (legacy, still supported)
+      config :kaffe,
+        consumers: %{
+          "subscriber_1" => [...],  # same config as above
+          "subscriber_2" => [...]
+        }
       ```
 
 3. Add `Kaffe.GroupMemberSupervisor` as a supervisor in your supervision tree.
@@ -146,12 +154,12 @@ There is also legacy support for single message consumers, which process one mes
           children = [
             %{
               id: Kaffe.GroupMemberSupervisor.Subscriber1,
-              start: {Kaffe.GroupMemberSupervisor, :start_link, ["subscriber_1"]},
+              start: {Kaffe.GroupMemberSupervisor, :start_link, [:subscriber_1]},
               type: :supervisor
             },
             %{
               id: Kaffe.GroupMemberSupervisor.Subscriber2,
-              start: {Kaffe.GroupMemberSupervisor, :start_link, ["subscriber_2"]},
+              start: {Kaffe.GroupMemberSupervisor, :start_link, [:subscriber_2]},
               type: :supervisor
             }
           ]

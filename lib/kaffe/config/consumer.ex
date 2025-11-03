@@ -26,8 +26,11 @@ defmodule Kaffe.Config.Consumer do
 
   def consumer_group(config_key), do: config_get!(config_key, :consumer_group)
 
+  def subscriber_name(config_key) when is_binary(config_key),
+    do: config_key |> String.to_atom()
+
   def subscriber_name(config_key),
-    do: config_get(config_key, :subscriber_name, consumer_group(config_key)) |> String.to_atom()
+    do: config_key
 
   def topics(config_key), do: config_get!(config_key, :topics)
 
@@ -132,17 +135,40 @@ defmodule Kaffe.Config.Consumer do
   def config_get!(config_key, :subscriber_name), do: config_key
 
   def config_get!(config_key, key) do
-    Application.get_env(:kaffe, :consumers)
-    |> Map.get(config_key)
-    |> Keyword.fetch!(key)
+    consumer_config =
+      Application.get_env(:kaffe, :consumers)
+      |> consumer_config(config_key)
+
+    case consumer_config do
+      nil ->
+        raise """
+        No configuration found for consumer #{inspect(config_key)}.
+
+        Please ensure that your Kaffe consumer configuration is set correctly in your config files.
+        """
+
+      config ->
+        Keyword.fetch!(config, key)
+    end
   end
 
-  def config_get(config_key, :subscriber_name, _default), do: config_key
-
   def config_get(config_key, key, default) do
-    Application.get_env(:kaffe, :consumers)
-    |> Map.get(config_key)
-    |> Keyword.get(key, default)
+    consumer_config =
+      Application.get_env(:kaffe, :consumers)
+      |> consumer_config(config_key)
+
+    case consumer_config do
+      nil -> default
+      config -> Keyword.get(config, key, default)
+    end
+  end
+
+  def consumer_config(consumers, config_key) do
+    case consumers do
+      map when is_map(map) -> Map.get(map, config_key)
+      list when is_list(list) -> Keyword.get(list, config_key)
+      _ -> nil
+    end
   end
 
   def validate_configuration!() do

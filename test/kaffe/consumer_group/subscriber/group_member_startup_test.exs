@@ -25,16 +25,19 @@ defmodule Kaffe.GroupMemberStartupTest do
   test "startup" do
     Process.register(self(), :test_case)
     # Retrieve the consumer config
-    consumer_config = Application.get_env(:kaffe, :consumers) |> Map.values() |> List.first()
+    consumer_config =
+      Application.get_env(:kaffe, :consumers)
+      |> Keyword.values()
+      |> List.first()
 
-    # Set configuration for two consumers
-    Application.put_env(:kaffe, :consumers, %{"s1" => consumer_config, "s2" => consumer_config})
+    # Set configuration for two consumers using keyword list format
+    Application.put_env(:kaffe, :consumers, s1: consumer_config, s2: consumer_config)
 
     # Set up the first consumer
-    {:ok, _pid} = Kaffe.GroupMemberSupervisor.start_link("s1")
+    {:ok, _pid} = Kaffe.GroupMemberSupervisor.start_link(:s1)
 
     # Set up the second consumer
-    {:ok, _pid} = Kaffe.GroupMemberSupervisor.start_link("s2")
+    {:ok, _pid} = Kaffe.GroupMemberSupervisor.start_link(:s2)
 
     Process.sleep(consumer_config[:rebalance_delay_ms] + 100)
 
