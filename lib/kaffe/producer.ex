@@ -71,16 +71,8 @@ defmodule Kaffe.Producer do
 
   `messages` must be a list of type `message()` or `message_object()`
 
-  Returns:
+  or
 
-       * `:ok` on successfully producing each message
-       * `{:error, reason}` for any error
-  """
-  def produce_sync(topic, message_list) when is_list(message_list) do
-    produce_list(topic, message_list, global_partition_strategy())
-  end
-
-  @doc """
   Synchronously produce the given `key`/`value` to the first Kafka topic.
 
   This is a simpler way to produce if you've only given Producer a single topic
@@ -88,9 +80,15 @@ defmodule Kaffe.Producer do
 
   Returns:
 
-       * `:ok` on successfully producing the message
+       * `:ok` on successfully producing each message
        * `{:error, reason}` for any error
   """
+  def produce_sync(topic_or_key, message_list_or_value)
+
+  def produce_sync(topic, message_list) when is_list(message_list) do
+    produce_list(topic, message_list, global_partition_strategy())
+  end
+
   def produce_sync(key, value) do
     topic = config().topics |> List.first()
     produce_value(topic, key, value)
@@ -101,20 +99,21 @@ defmodule Kaffe.Producer do
 
   `message_list` must be a list of type `message()` or `message_type()`
 
+  or
+
+  Synchronously produce the `key`/`value` to `topic` if $2 is not a list.
+
   Returns:
 
        * `:ok` on successfully producing each message
        * `{:error, reason}` for any error
   """
+  def produce_sync(topic, partition_or_key, message_list_or_value)
+
   def produce_sync(topic, partition, message_list) when is_list(message_list) do
     produce_list(topic, message_list, fn _, _, _, _ -> partition end)
   end
 
-  @doc """
-  Synchronously produce the `key`/`value` to `topic`
-
-  See `produce_sync/2` for returns.
-  """
   def produce_sync(topic, key, value) do
     produce_value(topic, key, value)
   end
